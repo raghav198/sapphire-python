@@ -56,6 +56,25 @@ class ConditionalAST:
 
     def __str__(self):
         return f'(IF {self.cond} {self.yes} {self.no})'
+
+class CallAST:
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args
+
+    def __str__(self):
+        return f'({self.name} {" ".join(map(str, self.args))})'
+
+class FunctionAST:
+    def __init__(self, args, body):
+        self.scope = dict()
+        self.argNames = args
+        self.body = body
+
+    def __str__(self):
+        return f'(func [{" ".join(self.argNames)}] {self.body}'
+
+
 # class Lexer:
 #     def __init__(self, tokens: List[Token]):
 #         self.tokens = tokens
@@ -106,13 +125,17 @@ class Lexer:
     def atom(self):
         try:
             self.save()
-            return AtomAST(self.eat(TokenType.STR))
+            tok = self.eat(TokenType.STR)
+            self.saved.pop()
+            return AtomAST(tok)
         except TokenError:
             self.reset()
 
         try:
             self.save()
-            return AtomAST(self.eat(TokenType.NUM))
+            tok = self.eat(TokenType.NUM)
+            self.saved.pop()
+            return AtomAST(tok)
         except TokenError:
             self.reset()
 
@@ -130,6 +153,7 @@ class Lexer:
                 self.save()
                 unop = self.eat((TokenType.ADD, TokenType.SUB))
                 rhs = self.expression()
+                self.saved.pop()
                 return ExpressionAST(unop, None, rhs)
             except TokenError:
                 self.reset()
@@ -139,13 +163,16 @@ class Lexer:
                 self.eat(TokenType.LPAR)
                 expr = self.expression()
                 self.eat(TokenType.RPAR)
+                self.saved.pop()
                 return expr
             except TokenError:
                 self.reset()
 
             try:
                 self.save()
-                return self.atom()
+                atom = self.atom()
+                self.saved.pop()
+                return atom
             except TokenError:
                 self.reset()
 
@@ -174,6 +201,7 @@ class Lexer:
                 op = self.eat((TokenType.ADD, TokenType.SUB))
                 rhs = muldiv()
                 ast = ExpressionAST(op, ast, rhs)
+            self.saved.pop()
             return ast
         except TokenError:
             self.reset()
@@ -183,16 +211,16 @@ class Lexer:
     def assignment(self):
         dest = self.eat(TokenType.ID)
         self.eat(TokenType.ASSIGN)
-        val = self.expression()
+        val = self.line()
         return AssignmentAST(dest, val)
 
     def boolean(self):
         def singleBool():
-
             try:
                 self.save()
                 unop = self.eat(TokenType.NOT)
                 rhs = self.boolean()
+                self.saved.pop()
                 return ExpressionAST(unop, None, rhs)
             except TokenError:
                 self.reset()
@@ -202,6 +230,7 @@ class Lexer:
                 self.eat(TokenType.LPAR)
                 boolean = self.boolean()
                 self.eat(TokenType.RPAR)
+                self.saved.pop()
                 return boolean
             except TokenError:
                 self.reset()
@@ -211,6 +240,7 @@ class Lexer:
                 lhs = self.expression()
                 op = self.eat((TokenType.LT, TokenType.GT, TokenType.LE, TokenType.GE, TokenType.EQ))
                 rhs = self.expression()
+                self.saved.pop()
                 return ExpressionAST(op, lhs, rhs)
             except TokenError:
                 self.reset()
@@ -246,6 +276,7 @@ class Lexer:
                 op = self.eat(TokenType.OR)
                 rhs = xors()
                 ast = ExpressionAST(op, ast, rhs)
+            self.saved.pop()
             return ast
         except TokenError:
             self.reset()
@@ -262,6 +293,7 @@ class Lexer:
             if self.tokens[self.ptr].type is TokenType.ELSE:
                 self.eat(TokenType.ELSE)
                 no = self.line()
+            self.saved.pop()
             return ConditionalAST(cond, yes, no)
         except TokenError:
             self.reset()
@@ -275,15 +307,25 @@ class Lexer:
             if self.tokens[self.ptr].type is TokenType.ELSE:
                 self.eat(TokenType.ELSE)
                 no = self.line()
+            self.saved.pop()
             return ConditionalAST(cond, yes, no)
         except TokenError:
             self.reset()
 
         self.expect('conditional')
 
+    def callFunc(self):
+        name = self.eat(TokenType.ID)
+        self.eat(TokenType.LARG)
+        args = list()
+        while self.tokens[self.ptr].type is not TokenType.RARG:
+            args.append(self.line())
+            self.eat(TokenType.SEPARG)
+        self.eat(TokenType.RARG)
+
+        return CallAST(name, args)
 
     def line(self):
-
         try:
             self.save()
             self.eat(TokenType.LBLK)
@@ -293,6 +335,12 @@ class Lexer:
                 self.eat(TokenType.TERM)
             self.eat(TokenType.RBLK)
             return BlockAST(lines)
+        except TokenError:
+            self.reset()
+
+        try:
+            self.save()
+            return self.callFunc()
         except TokenError:
             self.reset()
 
@@ -324,25 +372,8 @@ class Lexer:
 
 
 
-
-    # def tryParse(self, tok):
-    #     if self.tokens[0].type == tok:
-    #         self.parsed = self.tokens[0]
-    #         return True
-    #     return False
-    #
-    # def tryAtom(self):
-    #     return self.tryParse(TokenType.ID) or\
-    #            self.tryParse(TokenType.STR) or\
-    #            self.tryParse(TokenType.NUM)
-    #
-    # def tryMathExpr(self):
-    #     self.save()
-    #     if self.tryParse(TokenType.LPAR):
-
-
-
 variables = dict()
+
 
 def execute(ast):
     if type(ast) is AssignmentAST:
@@ -406,10 +437,16 @@ if __name__ == '__main__':
 
 
     while True:
-        expression = input('$ ')
+        import sys
+        print('[Sapphire]')
+        expression = ' '.join(map(str.strip, sys.stdin.readlines()))
+        # print(expression)
+        # expression = input('$ ')
+        # expression = '3 + 4'
         if expression == 'quit':
             break
         toks = list(Tokenizer(expression).tokens())
+        # print(toks)
         lex = Lexer(toks)
         ast = lex.line()
         print(ast)
