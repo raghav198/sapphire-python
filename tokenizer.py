@@ -34,6 +34,9 @@ class TokenType(Enum):
         NOT = auto()
         XOR = auto()
         EOL = auto()
+        LARG = auto()
+        RARG = auto()
+        SEPARG = auto()
 
 
 class Token:
@@ -52,7 +55,7 @@ class Tokenizer:
         self.stream = stream
         self.patterns = patterns
 
-    def tokens(self):
+    def tokens(self, debug=False):
         def match(tok, string, capture=False):
             # input(f'matching {string}')
             if self.stream.startswith(string):
@@ -60,8 +63,11 @@ class Tokenizer:
                 return Token(tok, string) if capture else Token(tok)
             return False
 
-        self.stream = self.stream.lstrip(' ')
+        self.stream = self.stream.lstrip()
         while len(self.stream):
+            if debug:
+                input()
+                print(self.stream)
             self.stream = self.stream.lstrip(' ')
             if self.stream[0].isdigit():
                 number, rest = re.match(r'(\d+)(.*)', self.stream).groups()
@@ -85,6 +91,7 @@ class Tokenizer:
                       match(TokenType.AND, '&&') or \
                       match(TokenType.GE, '>=') or \
                       match(TokenType.GE, '<=') or \
+                      match(TokenType.LARG, ':{') or \
                       match(TokenType.NOT, '~') or \
                       match(TokenType.XOR, '$') or \
                       match(TokenType.ADD, '+') or\
@@ -94,10 +101,12 @@ class Tokenizer:
                       match(TokenType.LPAR, '(') or \
                       match(TokenType.RPAR, ')') or \
                       match(TokenType.EXP, '^') or \
-                      match(TokenType.TERM, ';') or \
+                      match(TokenType.TERM, '.') or \
                       match(TokenType.GT, '>') or \
                       match(TokenType.LT, '<') or \
-                      match(TokenType.EQ, '=')
+                      match(TokenType.EQ, '=') or \
+                      match(TokenType.RARG, '}') or \
+                      match(TokenType.SEPARG, ';')
         yield Token(TokenType.EOF)
 
 
@@ -107,5 +116,7 @@ if __name__ == '__main__':
     print(Token(TokenType.LPAR))
 
     tok = Tokenizer('(x>3) => {{ number :- 4; }} !! {{ number :- 7; }}')
+    print(list(tok.tokens()))
+    tok = Tokenizer('print:{"Hello", x}')
     print(list(tok.tokens()))
 
