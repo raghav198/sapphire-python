@@ -1,6 +1,6 @@
 # coding=utf-8
 from tokenizer import *
-
+from asts import *
 
 
 """
@@ -10,69 +10,6 @@ atom = num | id
 """
 expr = atom | (expr) | expr op expr
 """
-
-class ExpressionAST:
-    def __init__(self, op, lhs, rhs):
-        self.lhs = lhs
-        self.rhs = rhs
-        self.op = op
-
-    def __str__(self):
-        return f'({self.op} {self.lhs} {self.rhs})'
-
-
-class AtomAST:
-    def __init__(self, atom: Token):
-        assert atom.type in (TokenType.NUM, TokenType.STR, TokenType.ID)
-        self.val = atom.value
-        self.type = atom.type
-
-    def __str__(self):
-        if self.type == TokenType.ID:
-            return f'${self.val}'
-        return str(self.val)
-
-class AssignmentAST:
-    def __init__(self, dest, val):
-        self.dest = dest
-        self.val = val
-
-    def __str__(self):
-        return f'[{self.dest} <- {self.val}]'
-
-class BlockAST:
-    def __init__(self, lines):
-        self.lines = lines
-
-    def __str__(self):
-        return f'[{" ".join(map(str, self.lines))}]'
-
-
-class ConditionalAST:
-    def __init__(self, cond, yes, no):
-        self.cond = cond
-        self.yes = yes
-        self.no = no
-
-    def __str__(self):
-        return f'(IF {self.cond} {self.yes} {self.no})'
-
-class CallAST:
-    def __init__(self, name, args):
-        self.name = name
-        self.args = args
-
-    def __str__(self):
-        return f'({self.name} {" ".join(map(str, self.args))})'
-
-class FunctionAST:
-    def __init__(self, args, body):
-        self.scope = dict()
-        self.argNames = args
-        self.body = body
-
-    def __str__(self):
-        return f'(func [{" ".join(self.argNames)}] {self.body}'
 
 
 # class Lexer:
@@ -98,7 +35,6 @@ class FunctionAST:
 #                 return ast
 #             raise Exception("Expected ')'!")
 #
-
 
 class Lexer:
     def __init__(self, tokens):
@@ -372,57 +308,56 @@ class Lexer:
 
 
 
-variables = dict()
 
 
-def execute(ast):
-    if type(ast) is AssignmentAST:
-        variables[ast.dest.value] = ast.val
-        return ast.val
-    elif type(ast) is ExpressionAST:
-        if ast.lhs is None:
-            if ast.op.type == TokenType.SUB:
-                return -1 * int(execute(ast.rhs))
-            elif ast.op.type == TokenType.ADD:
-                return int(execute(ast.rhs))
-            elif ast.op.type == TokenType.NOT:
-                return not execute(ast.rhs)
-        if ast.op.type == TokenType.ADD:
-            return execute(ast.lhs) + execute(ast.rhs)
-        elif ast.op.type == TokenType.SUB:
-            return execute(ast.lhs) - execute(ast.rhs)
-        elif ast.op.type == TokenType.MUL:
-            return execute(ast.lhs) * execute(ast.rhs)
-        elif ast.op.type == TokenType.DIV:
-            return execute(ast.lhs) / execute(ast.rhs)
-        elif ast.op.type == TokenType.EXP:
-            return execute(ast.lhs) ** execute(ast.rhs)
-        elif ast.op.type == TokenType.GT:
-            return execute(ast.lhs) > execute(ast.rhs)
-        elif ast.op.type == TokenType.LT:
-            return execute(ast.lhs) < execute(ast.rhs)
-        elif ast.op.type == TokenType.GE:
-            return execute(ast.lhs) >= execute(ast.rhs)
-        elif ast.op.type == TokenType.LE:
-            return execute(ast.lhs) <= execute(ast.rhs)
-        elif ast.op.type == TokenType.EQ:
-            return execute(ast.lhs) == execute(ast.rhs)
-    elif type(ast) is AtomAST:
-        if ast.type == TokenType.ID:
-            return execute(variables[ast.val])
-        else:
-            return ast.val
-    elif type(ast) is BlockAST:
-        val = None
-        for line in ast.lines:
-            val = execute(line)
-        return val
-    elif type(ast) is ConditionalAST:
-        if execute(ast.cond):
-            return execute(ast.yes)
-        elif ast.no is not None:
-            return execute(ast.no)
-
+# def execute(ast):
+#     if type(ast) is AssignmentAST:
+#         variables[ast.dest.value] = ast.val
+#         return ast.val
+#     elif type(ast) is ExpressionAST:
+#         if ast.lhs is None:
+#             if ast.op.type == TokenType.SUB:
+#                 return -1 * int(execute(ast.rhs))
+#             elif ast.op.type == TokenType.ADD:
+#                 return int(execute(ast.rhs))
+#             elif ast.op.type == TokenType.NOT:
+#                 return not execute(ast.rhs)
+#         if ast.op.type == TokenType.ADD:
+#             return execute(ast.lhs) + execute(ast.rhs)
+#         elif ast.op.type == TokenType.SUB:
+#             return execute(ast.lhs) - execute(ast.rhs)
+#         elif ast.op.type == TokenType.MUL:
+#             return execute(ast.lhs) * execute(ast.rhs)
+#         elif ast.op.type == TokenType.DIV:
+#             return execute(ast.lhs) / execute(ast.rhs)
+#         elif ast.op.type == TokenType.EXP:
+#             return execute(ast.lhs) ** execute(ast.rhs)
+#         elif ast.op.type == TokenType.GT:
+#             return execute(ast.lhs) > execute(ast.rhs)
+#         elif ast.op.type == TokenType.LT:
+#             return execute(ast.lhs) < execute(ast.rhs)
+#         elif ast.op.type == TokenType.GE:
+#             return execute(ast.lhs) >= execute(ast.rhs)
+#         elif ast.op.type == TokenType.LE:
+#             return execute(ast.lhs) <= execute(ast.rhs)
+#         elif ast.op.type == TokenType.EQ:
+#             return execute(ast.lhs) == execute(ast.rhs)
+#     elif type(ast) is AtomAST:
+#         if ast.type == TokenType.ID:
+#             return execute(variables[ast.val])
+#         else:
+#             return ast.val
+#     elif type(ast) is BlockAST:
+#         val = None
+#         for line in ast.lines:
+#             val = execute(line)
+#         return val
+#     elif type(ast) is ConditionalAST:
+#         if execute(ast.cond):
+#             return execute(ast.yes)
+#         elif ast.no is not None:
+#             return execute(ast.no)
+#
 
 
 
@@ -439,17 +374,19 @@ if __name__ == '__main__':
     while True:
         import sys
         print('[Sapphire]')
+
         expression = ' '.join(map(str.strip, sys.stdin.readlines()))
-        # print(expression)
+        print(expression)
         # expression = input('$ ')
         # expression = '3 + 4'
         if expression == 'quit':
             break
         toks = list(Tokenizer(expression).tokens())
-        # print(toks)
+        print(toks)
         lex = Lexer(toks)
         ast = lex.line()
         print(ast)
-        print(f'=> {execute(ast)}')
+        # print(f'=> {execute(ast)}')
+        print(f'=> {ast.execute(variables)}')
         # print(variables)
 
