@@ -74,7 +74,7 @@ class Tokenizer:
                 self.stream = rest
                 yield Token(TokenType.NUM, int(number))
             elif self.stream[0] in "'\"":
-                string, rest = re.match(rf'{self.stream[0]}(.+?){self.stream[0]}(.*)', self.stream).groups()
+                string, rest = re.match(rf'{self.stream[0]}(.*?){self.stream[0]}(.*)', self.stream).groups()
                 self.stream = rest
                 yield Token(TokenType.STR, string)
             elif self.stream[0].isalpha():
