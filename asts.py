@@ -104,10 +104,10 @@ class CallAST:
         self.args = args
 
     def __str__(self):
-        return f'({self.name} {" ".join(map(str, self.args))})'
+        return f'({self.name.value} {" ".join(map(str, self.args))})'
 
     def execute(self, scope):
-        return scope[self.name](self.args, scope)
+        return scope[self.name.value](self.args, scope)
 
 
 class FunctionAST:
