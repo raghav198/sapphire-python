@@ -256,7 +256,10 @@ class Lexer:
         args = list()
         while self.tokens[self.ptr].type is not TokenType.RARG:
             args.append(self.line())
-            self.eat(TokenType.SEPARG)
+            if self.tokens[self.ptr].type is TokenType.SEPARG:
+                self.eat(TokenType.SEPARG)
+            else:
+                break
         self.eat(TokenType.RARG)
 
         return CallAST(name, args)
@@ -363,11 +366,11 @@ class Lexer:
 
 if __name__ == '__main__':
     # 3 * (5 + x)
-    ast = ExpressionAST(TokenType.MUL, AtomAST(Token(TokenType.NUM, 3)),
-                        ExpressionAST(TokenType.ADD, AtomAST(Token(TokenType.NUM, 5)),
-                                      AtomAST(Token(TokenType.ID, 'x'))))
-
-    print(ast)
+    # ast = ExpressionAST(TokenType.MUL, AtomAST(Token(TokenType.NUM, 3)),
+    #                     ExpressionAST(TokenType.ADD, AtomAST(Token(TokenType.NUM, 5)),
+    #                                   AtomAST(Token(TokenType.ID, 'x'))))
+    #
+    # print(ast)
 
 
 

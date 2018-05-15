@@ -65,7 +65,18 @@ class AssignmentAST:
         return f'[{self.dest} <- {self.val}]'
 
     def execute(self, scope):
-        scope[self.dest.value] = self.val
+        # scope[self.dest.value] = self.val.execute(scope)
+        val = self.val.execute(scope)
+        if type(val) is AtomAST:
+            scope[self.dest.value] = self.val
+        elif type(val) is int:
+            scope[self.dest.value] = AtomAST(Token(TokenType.NUM, val))
+        elif type(val) is str:
+            scope[self.dest.value] = AtomAST(Token(TokenType.STR, val))
+        else:
+            scope[self.dest.value] = AtomAST(Token(TokenType.STR, val))
+            print('Warning: value of type {} is not supported!'.format(type(val)))
+
         return self.val
 
 
