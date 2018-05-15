@@ -36,7 +36,7 @@ scope = {
     'prompt': builtin_prompt
 }
 if __name__ == '__main__':
-    sys.argv.append('script.sfr')
+    sys.argv.append('elseif.sfr')
     while True:
 
         print('[Sapphire]')
@@ -45,7 +45,8 @@ if __name__ == '__main__':
         else:
             read = sys.stdin.readlines()
 
-        expression = ' '.join(map(str.strip, read))
+        # expression = ' '.join(map(str.strip, read))
+        expression = ''.join(read)
         # print(expression)
         # expression = input('$ ')
         # expression = '3 + 4'

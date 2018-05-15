@@ -59,27 +59,32 @@ class Tokenizer:
         def match(tok, string, capture=False):
             # input(f'matching {string}')
             if self.stream.startswith(string):
+                # print(f'matched [{string}]')
                 self.stream = self.stream[len(string):]
+                # print(f'<<{self.stream}>> remains')
                 return Token(tok, string) if capture else Token(tok)
             return False
 
         self.stream = self.stream.lstrip()
         while len(self.stream):
+            self.stream = self.stream.lstrip()
             if debug:
                 input()
-                print(self.stream)
-            self.stream = self.stream.lstrip(' ')
+                print('###' + self.stream)
             if self.stream[0].isdigit():
-                number, rest = re.match(r'(\d+)(.*)', self.stream).groups()
-                self.stream = rest
+                number, rest = re.match(r'(\d+)(.*)', self.stream, re.MULTILINE).groups()
+                # print(f'found number {number}; {{{rest}}} remains!')
+                self.stream = self.stream[len(number):]
                 yield Token(TokenType.NUM, int(number))
             elif self.stream[0] in "'\"":
-                string, rest = re.match(rf'{self.stream[0]}(.*?){self.stream[0]}(.*)', self.stream).groups()
-                self.stream = rest
+                string, rest = re.match(rf'{self.stream[0]}(.*?){self.stream[0]}(.*)', self.stream, re.MULTILINE).groups()
+                # print(f'found string {string}; {{{rest}}} remains!')
+                self.stream = self.stream[len(string) + 2:]
                 yield Token(TokenType.STR, string)
             elif self.stream[0].isalpha():
-                ident, rest = re.match(r'([a-z]+)(.*)', self.stream).groups()
-                self.stream = rest
+                ident, rest = re.match(r'([a-z]+)(.*)', self.stream, re.MULTILINE).groups()
+                # print(f'found ID {ident}; {{{rest}}} remains!')
+                self.stream = self.stream[len(ident):]
                 yield Token(TokenType.ID, ident)
             else:
                 yield match(TokenType.ASSIGN, ':-') or \
@@ -107,6 +112,7 @@ class Tokenizer:
                       match(TokenType.EQ, '=') or \
                       match(TokenType.RARG, '}') or \
                       match(TokenType.SEPARG, ';')
+            # print('<' + self.stream + '>')
         yield Token(TokenType.EOF)
 
 
